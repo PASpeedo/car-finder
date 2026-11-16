@@ -1,0 +1,19 @@
+{
+  "id": "./",
+  "name": "Porsche Deal Hunter",
+  "short_name": "Porsche Hunter",
+  "description": "Personal classic Porsche listing watchlist",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#101715",
+  "theme_color": "#101715",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
