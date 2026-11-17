@@ -38,7 +38,7 @@ class RulesTests(unittest.TestCase):
                {"year":1984,"body":"coupe","condition":"driver","sold_price":55000,"verified_sold":True,"source_url":"https://example.org/b"},
                {"year":1985,"body":"coupe","condition":"driver","sold_price":60000,"verified_sold":True,"source_url":"https://example.org/c"},
                {"year":1984,"body":"coupe","condition":"driver","sold_price":100000,"verified_sold":False,"source_url":"https://example.org/d"}]
-        r=assess_comparables({"title":"1984 Porsche 911","price":18000},comps)
+        r=assess_comparables({"title":"1984 Porsche 911 Coupe","year":1984,"price":18000},comps)
         self.assertEqual(r["median_sold_price"],55000)
         self.assertEqual(r["comps"],3)
         self.assertEqual(r["discount_pct"],67.3)
