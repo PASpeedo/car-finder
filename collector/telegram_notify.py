@@ -4,7 +4,7 @@
 Set TELEGRAM_BOT_TOKEN in GitHub Actions secrets. Send /start to the bot;
 a unique private conversation is detected automatically.
 """
-import json, os, re, sys
+import hashlib, hmac, json, os, re, sys
 from pathlib import Path
 from urllib import request, parse, error
 
@@ -75,10 +75,11 @@ def main():
         return 0
     chat=chat_for(token)
     if not chat:return 0
-    state=read(STATE,{"chat_id":"","welcome":False,"notified":[]})
-    if state.get("chat_id") and state["chat_id"]!=chat:
+    state=read(STATE,{"chat_fingerprint":"","welcome":False,"notified":[]})
+    fingerprint=hmac.new(token.encode(),chat.encode(),hashlib.sha256).hexdigest()
+    if state.get("chat_fingerprint") and state["chat_fingerprint"]!=fingerprint:
         raise RuntimeError("Telegram destination changed; review telegram_state.json.")
-    if not state.get("chat_id"):state={"chat_id":chat,"welcome":False,"notified":[]}
+    if not state.get("chat_fingerprint"):state={"chat_fingerprint":fingerprint,"welcome":False,"notified":[]}
     if not state.get("welcome"):
         telegram(token,"sendMessage",{"chat_id":chat,"text":"🏁 Speedy connected! Craigslist candidate notifications are active. Listings are not independently verified."})
         state["welcome"]=True
@@ -88,7 +89,7 @@ def main():
     pending=[x for x in read(FEED,[]) if isinstance(x,dict) and x.get("url") and x["url"] not in sent and qualifies(x)]
     pending.sort(key=lambda x:x.get("first_seen",""))
     for x in pending[:4]:
-        price=("£").replace("£","$")+format(int(x["price"]),",") if x.get("price") is not None else "Not shown in email"
+        price="$"+format(int(x["price"]),",") if x.get("price") is not None else "Not shown in email"
         message="\n".join([
             "🔎 Porsche 911 candidate — NOT a verified deal",
             str(x.get("title","Porsche"))[:150],
