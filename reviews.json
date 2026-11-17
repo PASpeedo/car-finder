@@ -1,0 +1,35 @@
+[
+  {
+    "id": "cl-7999096953",
+    "url": "https://www.craigslist.org/view/d/seattle-1977-porsche-911s-targa-classic/f7G2mCcgT5qVsv5khyEJJx",
+    "title": "1977 Porsche 911S Targa",
+    "location": "Seattle, WA",
+    "year": 1977,
+    "price": 21500,
+    "priority": "Watchlist — needs inspection",
+    "priority_reason": "Above the $20,000 target and the seller discloses a non-engaging fourth gear. Not a verified bargain.",
+    "source_checked": "2026-11-17",
+    "seller_claims": [
+      "91,361 miles shown on odometer",
+      "2.7L flat-six with five-speed manual",
+      "Clean title, rust-free body and service history claimed",
+      "Fourth gear currently does not engage"
+    ],
+    "risk_notes": [
+      "High priority: diagnose 915 gearbox / shifter linkage; budget for possible transmission removal or rebuild",
+      "Inspect 2.7L engine for head-stud problems, leaks and overheating; request engine-work records",
+      "Verify rust claims with underside photos, battery area, longitudinal structure and Targa floor/rockers",
+      "Verify title, VIN, seller identity and service paperwork before traveling or sending money"
+    ],
+    "questions": [
+      "What happens when shifting into fourth: grinds, pops out, or cannot select? Does it engage with engine off?",
+      "Any invoices for engine rebuild, head studs, oil leaks or transmission work?",
+      "Can the seller provide VIN, underside photos, cold-start video and compression/leak-down numbers?",
+      "Will the seller permit an independent pre-purchase inspection?"
+    ],
+    "valuation_note": "No reliable condition-matched sales appraisal is available yet; do not use restored-car auction prices as a value estimate.",
+    "price_note": "Asking $21,500 on Nov 17, 2026; possible earlier $26,500 search result not independently confirmed as the same listing.",
+    "next_action": "Request VIN, 915 gearbox diagnosis, underside photos, engine service receipts and independent inspection before considering an offer.",
+    "origin": "Listing facts checked against the public Craigslist post; risk analysis is a cautious assessment, not a mechanic's diagnosis."
+  }
+]
