@@ -93,6 +93,7 @@ def main():
     html_anchor_count=0
     html_email_count=0
     sender_verified_count=0
+    shape_count={'listing_id_html':0,'html_links_other':0,'owner_category':0,'dealer_category':0,'non_listing':0}
     with imaplib.IMAP4_SSL(host,993,timeout=30) as imap:
         imap.login(user,pwd)
         status,_=imap.select("INBOX",readonly=True)
@@ -111,6 +112,79 @@ def main():
                     sender_verified_count+=1
                 for content_kind,body in decode_text(parsed):
                     raw_craigslist_urls+=len(CL_URL.findall(body))
+                    for raw_url in CL_URL.findall(body):
+                        try:
+                            parsed_url=urlparse(html.unescape(raw_url))
+                            path=parsed_url.path.lower()
+                            if re.search(r'/[0-9]{8,}\\.html
+                    if content_kind=="text/html":
+                        html_email_count+=1
+                        p=Links()
+                        try:p.feed(body)
+                        except Exception:pass
+                        html_anchor_count+=len(p.links)
+                candidates=parse_email(blob[1])
+                extracted_links+=len(candidates)
+                for candidate in candidates:
+                    old=items.get(candidate["url"])
+                    fresh=classify(candidate)
+                    if old:
+                        # New Craigslist email may change price or reveal better title.
+                        if len(candidate.get("title","")) > len(old.get("title","")):
+                            old["title"]=candidate["title"]
+                        new_price=fresh.get("price")
+                        previous=old.get("price")
+                        if new_price is not None and new_price!=previous:
+                            history=old.setdefault("price_history",[])
+                            if previous is not None and not history:
+                                history.append({"price":previous,"seen":old.get("first_seen")})
+                            history.append({"price":new_price,"seen":datetime.now(timezone.utc).isoformat()})
+                            old["price"]=new_price
+                            old["price_dropped"]=previous is not None and new_price<previous
+                        original_seen=old.get("first_seen")
+                        saved_history=old.get("price_history",[])
+                        was_drop=old.get("price_dropped",False)
+                        revised=classify(old)
+                        revised["first_seen"]=original_seen
+                        revised["price_history"]=saved_history
+                        revised["price_dropped"]=was_drop
+                        items[candidate["url"]]=revised
+                        continue
+                    items[candidate["url"]]=fresh
+        imap.logout()
+    data=list(items.values())[-LIMIT:]
+    try:
+        comps=json.loads(Path("comparables.json").read_text())
+        if not isinstance(comps,list):comps=[]
+    except (FileNotFoundError,ValueError):comps=[]
+    for row in data:
+        row["market_assessment"]=assess_comparables(row,comps)
+    save(data)
+    Path("collector_status.json").write_text(json.dumps({
+        "last_checked_utc":datetime.now(timezone.utc).isoformat(),
+        "records":len(data),
+        "emails_scanned":scanned_emails,
+        "candidate_links_extracted":extracted_links,
+        "craigslist_urls_in_email_bodies":raw_craigslist_urls,
+        "html_anchor_links":html_anchor_count,
+        "html_parts_seen":html_email_count,
+        "verified_sender_messages":sender_verified_count,
+        "url_shape_counts":shape_count,
+        "review_candidates":sum(x.get("status")=="review" for x in data),
+        "source":"Craigslist saved-search email"
+    },indent=2)+"\n")
+    print("Stored",len(data),"unique candidate URLs; examined",scanned_emails,"emails; extracted",extracted_links,"links.")
+    return 0
+if __name__=="__main__":sys.exit(main())
+,path):
+                                shape_count['listing_id_html']+=1
+                            elif ".html" in path:
+                                shape_count['html_links_other']+=1
+                            else:
+                                shape_count['non_listing']+=1
+                            if "/cto/" in path:shape_count['owner_category']+=1
+                            if "/ctd/" in path:shape_count['dealer_category']+=1
+                        except ValueError:pass
                     if content_kind=="text/html":
                         html_email_count+=1
                         p=Links()
