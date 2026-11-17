@@ -40,7 +40,15 @@ def chat_for(token):
     if override:
         if not re.fullmatch(r"-?\d+",override):raise RuntimeError("Chat ID must be numeric")
         return override
+    identity=telegram(token,"getMe",{})
+    username=str(identity.get("username",""))
+    print("Telegram authenticated bot:", "@"+username if username else "(unknown)")
+    webhook=telegram(token,"getWebhookInfo",{})
+    if webhook.get("url"):
+        print("Telegram diagnostic: webhook configured; getUpdates cannot receive chat messages.")
+        return None
     updates=telegram(token,"getUpdates",{"limit":100,"timeout":0})
+    print("Telegram diagnostic: pending updates",len(updates))
     ids=set()
     for u in updates:
         m=u.get("message",{})
