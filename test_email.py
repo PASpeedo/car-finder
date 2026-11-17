@@ -27,6 +27,12 @@ class EmailParsingTests(unittest.TestCase):
         self.assertEqual(len(x),1)
         self.assertIn("Porsche",x[0]["title"])
         self.assertEqual(classify(x[0])["price"],18000)
+    def test_html_listing_photo(self):
+        picture="https://images.craigslist.org/00A0A_photo_300x300.jpg"
+        doc='<a href="'+URL+'"><img src="'+picture+'">1984 Porsche 911 $17,500</a>'
+        x=parse_email(make_message(doc,True))
+        self.assertEqual(len(x),1)
+        self.assertEqual(x[0].get("image_url"),picture)
     def test_untrusted_sender(self):
         x=parse_email(make_message(URL,sender="noreply@example.com"))
         self.assertEqual(x,[])
