@@ -1,5 +1,5 @@
 name: Craigslist deal intake
-# Free email alerts, conservative deal triage, mobile health and mail-link diagnostics.
+# Free email alerts, conservative deal triage, mobile health and safe URL diagnostics.
 on:
   workflow_dispatch:
   push:
