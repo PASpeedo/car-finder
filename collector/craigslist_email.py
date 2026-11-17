@@ -87,6 +87,8 @@ def main():
         print("Not configured: add CL_IMAP_USER and CL_IMAP_APP_PASSWORD repository secrets.")
         return 0
     items={x["url"]:x for x in load() if isinstance(x,dict) and x.get("url")}
+    scanned_emails=0
+    extracted_links=0
     with imaplib.IMAP4_SSL(host,993,timeout=30) as imap:
         imap.login(user,pwd)
         status,_=imap.select("INBOX",readonly=True)
@@ -99,7 +101,10 @@ def main():
             if status!="OK":continue
             for blob in msgs or []:
                 if not isinstance(blob,tuple) or not isinstance(blob[1],bytes):continue
-                for candidate in parse_email(blob[1]):
+                scanned_emails+=1
+                candidates=parse_email(blob[1])
+                extracted_links+=len(candidates)
+                for candidate in candidates:
                     old=items.get(candidate["url"])
                     fresh=classify(candidate)
                     if old:
@@ -137,9 +142,11 @@ def main():
     Path("collector_status.json").write_text(json.dumps({
         "last_checked_utc":datetime.now(timezone.utc).isoformat(),
         "records":len(data),
+        "emails_scanned":scanned_emails,
+        "candidate_links_extracted":extracted_links,
         "review_candidates":sum(x.get("status")=="review" for x in data),
         "source":"Craigslist saved-search email"
     },indent=2)+"\n")
-    print("Stored",len(data),"unique candidate URLs.")
+    print("Stored",len(data),"unique candidate URLs; examined",scanned_emails,"emails; extracted",extracted_links,"links.")
     return 0
 if __name__=="__main__":sys.exit(main())
