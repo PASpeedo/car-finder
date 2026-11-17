@@ -106,6 +106,12 @@ def main():
         imap.logout()
     data=list(items.values())[-LIMIT:]
     save(data)
+    Path("collector_status.json").write_text(json.dumps({
+        "last_checked_utc":datetime.now(timezone.utc).isoformat(),
+        "records":len(data),
+        "review_candidates":sum(x.get("status")=="review" for x in data),
+        "source":"Craigslist saved-search email"
+    },indent=2)+"\n")
     print("Stored",len(data),"unique candidate URLs.")
     return 0
 if __name__=="__main__":sys.exit(main())
