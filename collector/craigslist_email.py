@@ -67,34 +67,11 @@ def parse_email(raw):
             if key not in results or len(title)>len(results[key]["title"]):
                 results[key]={"url":key,"title":title,"source":"craigslist-email","first_seen":datetime.now(timezone.utc).isoformat()}
     return list(results.values())
+from rules import classify as classify_rule
+
 def classify(row):
-    t=row["title"]
-    row.update(year=None,price=None,seller_type="unknown",status="needs_review",flags=[],score=0)
-    match=YEAR.search(t)
-    if match:row["year"]=int(match.group())
-    found=PRICE.search(t)
-    if found:row["price"]=int(found.group(1).replace(",",""))
-    if DEALER.search(t):row["seller_type"]="dealer";row["status"]="excluded_dealer";return row
-    if PARTS.search(t):row["status"]="excluded_parts";return row
-    if not P911.search(t):
-        # Many Craigslist alerts have truncated anchor text; keep for review.
-        row["flags"].append("911 identity needs verification")
-    if row["year"] and not 1965<=row["year"]<=1997:row["status"]="excluded_year";return row
-    if row["price"] is not None and row["price"]>20000:row["status"]="excluded_price";return row
-    row["flags"].append("private seller unverified")
-    if row["price"] is None:row["flags"].append("price needs verification")
-    if row["year"] is None:row["flags"].append("year needs verification")
-    if URGENT.search(t):row["flags"].append("seller urgency wording");row["score"]+=12
-    if PROJECT.search(t):row["flags"].append("project car");row["score"]+=5
-    if DRIVER.search(t):row["flags"].append("advertised running");row["score"]+=8
-    if RISK.search(t):row["flags"].append("major risk wording");row["score"]=0
-    # This is a triage score, NOT a market valuation or exceptional-deal designation.
-    row["score"]+=25 if P911.search(t) else 0
-    row["score"]+=10 if row["year"] else 0
-    row["score"]+=8 if row["price"] is not None else 0
-    row["score"]=min(70,row["score"])
-    row["status"]="review"
-    return row
+    return classify_rule(row)
+
 def load():
     try:
         data=json.loads(OUTPUT.read_text())
