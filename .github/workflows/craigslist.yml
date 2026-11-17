@@ -26,6 +26,7 @@ jobs:
           CL_IMAP_APP_PASSWORD: ${{ secrets.CL_IMAP_APP_PASSWORD }}
           CL_IMAP_HOST: ${{ vars.CL_IMAP_HOST || 'imap.gmail.com' }}
         run: python collector/craigslist_email.py
+      # Debugging prints bot username and pending-update count, never bot credentials.
       - name: Send Telegram lock screen alerts
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
