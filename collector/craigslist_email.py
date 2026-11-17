@@ -160,6 +160,8 @@ def main():
                         # New Craigslist email may change price or reveal better title.
                         if len(candidate.get("title","")) > len(old.get("title","")):
                             old["title"]=candidate["title"]
+                        if candidate.get("image_url") and not old.get("image_url"):
+                            old["image_url"]=candidate["image_url"]
                         new_price=fresh.get("price")
                         previous=old.get("price")
                         if new_price is not None and new_price!=previous:
