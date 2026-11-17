@@ -22,6 +22,13 @@ class RulesTests(unittest.TestCase):
         self.assertEqual(classify(listing("1999 Porsche 911 $12,000"))["status"],"excluded_year")
     def test_parts(self):
         self.assertEqual(classify(listing("Porsche 911 engine only $4000"))["status"],"excluded_parts")
+    def test_overlooked_911(self):
+        a=classify(listing("1982 911 SC Targa $18,000"))
+        self.assertEqual(a["status"],"review")
+        self.assertIn("Porsche make inferred; verify photos",a["flags"])
+    def test_ambiguous_911_goes_to_review_queue(self):
+        a=classify(listing("911 bargain $12000"))
+        self.assertEqual(a["status"],"verify_model")
     def test_no_comps_no_market_claim(self):
         r=assess_comparables({"title":"1984 Porsche 911","price":18000},[])
         self.assertEqual(r["status"],"insufficient_data")
