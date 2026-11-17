@@ -4,6 +4,7 @@ from statistics import median
 from urllib.parse import urlparse
 
 MODEL = re.compile(r"\b(?:911|930|964|993|carrera|targa)\b", re.I)
+AUTO_CUE = re.compile(r"\b(?:911|930|964|993)\b.{0,25}\b(?:sc|coupe|targa|carrera|turbo|air.cooled|convertible)\b|\b(?:sc|coupe|targa|carrera|turbo)\b.{0,25}\b(?:911|930|964|993)\b",re.I)
 PORSCHE = re.compile(r"\b(?:porsche|porshe|porche|porsch)\b", re.I)
 PARTS = re.compile(r"\b(?:parts? only|parting out|diecast|scale model|poster|engine only|wheels? only|transmission only|toy|repair manual)\b", re.I)
 DEALER = re.compile(r"\b(?:dealership|licensed dealer|dealer(?:s)? fees?|dealer inventory|financ(?:e|ing) available|buy here pay here|doc(?:umentation)? fee|stock\s*(?:#|number)|trade[- ]?ins? welcome|all credit accepted|cash or finance)\b", re.I)
@@ -49,15 +50,18 @@ def classify(item):
     # Owner category in the URL is a useful source indicator, not proof.
     x["seller_type"]="owner_category" if "/cto/" in path else "unknown"
     flags.append("seller identity unverified")
-    if not PORSCHE.search(text) or not MODEL.search(text):
+    likely911=bool(MODEL.search(text) and (PORSCHE.search(text) or AUTO_CUE.search(title)))
+    if not likely911:
         flags.append("911 identity unverified")
+    elif not PORSCHE.search(text):
+        flags.append("Porsche make inferred; verify photos")
     if price is None:flags.append("price not in email")
     if year is None:flags.append("year not in email")
     if URGENCY.search(text):flags.append("urgency wording")
     if PROJECT.search(text):flags.append("project car")
     if DRIVER.search(text):flags.append("advertised running")
     if RISK.search(text):flags.append("possible title/scam risk")
-    x["status"]="review" if PORSCHE.search(text) and MODEL.search(text) else "verify_model"
+    x["status"]="review" if likely911 else "verify_model"
     x["score"]=min(70, (25 if x["status"]=="review" else 0)+(10 if year else 0)+(8 if price else 0)+(8 if x["seller_type"]=="owner_category" else 0)+(8 if URGENCY.search(text) else 0)+(5 if PROJECT.search(text) else 0))
     # Never return an 'exceptional' score from title alone.
     if RISK.search(text):x["score"]=0
