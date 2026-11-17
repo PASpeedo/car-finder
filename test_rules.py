@@ -30,14 +30,14 @@ class RulesTests(unittest.TestCase):
         a=classify(listing("911 bargain $12000"))
         self.assertEqual(a["status"],"verify_model")
     def test_no_comps_no_market_claim(self):
-        r=assess_comparables({"title":"1984 Porsche 911","price":18000},[])
+        r=assess_comparables({"title":"1984 Porsche 911 Coupe","year":1984,"price":18000},[])
         self.assertEqual(r["status"],"insufficient_data")
         self.assertIsNone(r["discount_pct"])
     def test_three_verified_comps_only(self):
-        comps=[{"model":"911","condition":"driver","sold_price":50000,"verified_sold":True},
-               {"model":"911","condition":"driver","sold_price":55000,"verified_sold":True},
-               {"model":"911","condition":"driver","sold_price":60000,"verified_sold":True},
-               {"model":"911","condition":"driver","sold_price":100000,"verified_sold":False}]
+        comps=[{"year":1983,"body":"coupe","condition":"driver","sold_price":50000,"verified_sold":True,"source_url":"https://example.org/a"},
+               {"year":1984,"body":"coupe","condition":"driver","sold_price":55000,"verified_sold":True,"source_url":"https://example.org/b"},
+               {"year":1985,"body":"coupe","condition":"driver","sold_price":60000,"verified_sold":True,"source_url":"https://example.org/c"},
+               {"year":1984,"body":"coupe","condition":"driver","sold_price":100000,"verified_sold":False,"source_url":"https://example.org/d"}]
         r=assess_comparables({"title":"1984 Porsche 911","price":18000},comps)
         self.assertEqual(r["median_sold_price"],55000)
         self.assertEqual(r["comps"],3)
