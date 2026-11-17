@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+"""Send no-cost Telegram alerts from Craigslist email candidates.
+
+Set TELEGRAM_BOT_TOKEN in GitHub Actions secrets. Send /start to the bot;
+a unique private conversation is detected automatically.
+"""
+import json, os, re, sys
+from pathlib import Path
+from urllib import request, parse, error
+
+STATE=Path("telegram_state.json")
+FEED=Path("deals.json")
+P911=re.compile(r"\b(?:porsche|porshe|porche)\b.{0,45}\b(?:911|930|964|993|carrera|targa|turbo)\b|\b(?:911|930|964|993)\b.{0,45}\b(?:porsche|porshe|porche)\b", re.I)
+URGENT=re.compile(r"must sell|need gone|moving|relocating|estate sale|quick sale|no time to finish|\bobo\b",re.I)
+RISK=re.compile(r"no title|lost title|salvage|flood|wire transfer|deposit to hold",re.I)
+
+def read(path,default):
+    try:
+        v=json.loads(path.read_text())
+        return v if isinstance(v,type(default)) else default
+    except (FileNotFoundError,ValueError):return default
+
+def save(path,value):
+    path.write_text(json.dumps(value,indent=2,ensure_ascii=False)+"\n")
+
+def telegram(token,method,data):
+    payload=parse.urlencode(data).encode()
+    req=request.Request("https://api.telegram.org/bot"+token+"/"+method,data=payload,
+        headers={"Content-Type":"application/x-www-form-urlencoded"})
+    try:
+        with request.urlopen(req, timeout=20) as resp: ans=json.load(resp)
+    except (error.HTTPError,error.URLError,TimeoutError,ValueError):
+        # Never expose exception URLs: they contain the bot token.
+        raise RuntimeError("Telegram request failed: check bot token or connectivity") from None
+    if not ans.get("ok"):raise RuntimeError("Telegram rejected request")
+    return ans["result"]
+
+def chat_for(token):
+    override=os.getenv("TELEGRAM_CHAT_ID","").strip()
+    if override:
+        if not re.fullmatch(r"-?\d+",override):raise RuntimeError("Chat ID must be numeric")
+        return override
+    updates=telegram(token,"getUpdates",{"limit":100,"timeout":0})
+    ids=set()
+    for u in updates:
+        m=u.get("message",{})
+        c=m.get("chat",{})
+        if c.get("type")=="private" and isinstance(c.get("id"),int) and not m.get("from",{}).get("is_bot"):
+            ids.add(str(c["id"]))
+    if len(ids)==1:return next(iter(ids))
+    print("Telegram setup pending: send /start to your bot." if not ids else
+          "Multiple Telegram chats detected; set TELEGRAM_CHAT_ID explicitly.")
+    return None
+
+def qualifies(x):
+    if x.get("status")!="review" or x.get("seller_type")=="dealer":return False
+    title=str(x.get("title") or "")
+    if not P911.search(title) or RISK.search(title):return False
+    year=x.get("year")
+    if year is not None:
+        try:
+            if not 1965<=int(year)<=1997:return False
+        except (ValueError,TypeError):return False
+    price=x.get("price")
+    if price is not None:
+        try:return 0<int(price)<=20000
+        except (ValueError,TypeError):return False
+    # If price missing from email, only motivated-seller titles trigger alerts.
+    return bool(URGENT.search(title))
+
+def main():
+    token=os.getenv("TELEGRAM_BOT_TOKEN","").strip()
+    if not token:
+        print("Telegram not connected yet; notifications skipped.")
+        return 0
+    chat=chat_for(token)
+    if not chat:return 0
+    state=read(STATE,{"chat_id":"","welcome":False,"notified":[]})
+    if state.get("chat_id") and state["chat_id"]!=chat:
+        raise RuntimeError("Telegram destination changed; review telegram_state.json.")
+    if not state.get("chat_id"):state={"chat_id":chat,"welcome":False,"notified":[]}
+    if not state.get("welcome"):
+        telegram(token,"sendMessage",{"chat_id":chat,"text":"🏁 Speedy connected! Craigslist candidate notifications are active. Listings are not independently verified."})
+        state["welcome"]=True
+        save(STATE,state)
+        print("Telegram connection confirmed.")
+    sent=set(state.get("notified",[]))
+    pending=[x for x in read(FEED,[]) if isinstance(x,dict) and x.get("url") and x["url"] not in sent and qualifies(x)]
+    pending.sort(key=lambda x:x.get("first_seen",""))
+    for x in pending[:4]:
+        price=("£").replace("£","$")+format(int(x["price"]),",") if x.get("price") is not None else "Not shown in email"
+        message="\n".join([
+            "🔎 Porsche 911 candidate — NOT a verified deal",
+            str(x.get("title","Porsche"))[:150],
+            "Asking: "+price,
+            "Seller and condition: unverified",
+            "Market value: not yet verified",
+            str(x["url"])
+        ])
+        telegram(token,"sendMessage",{"chat_id":chat,"text":message,"disable_web_page_preview":"true"})
+        sent.add(x["url"])
+        state["notified"]=list(sent)[-3000:]
+        save(STATE,state)
+    print("Telegram:",len(pending),"eligible unsent candidates;",min(4,len(pending)),"new alerts delivered.")
+    return 0
+
+if __name__=="__main__":
+    try:sys.exit(main())
+    except RuntimeError as e:
+        print(str(e),file=sys.stderr)
+        sys.exit(1)
