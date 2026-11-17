@@ -111,12 +111,21 @@ def main():
                 if re.search(r'@(?:[a-z0-9-]+\.)?craigslist\.org\b',parsed.get("From","").lower()):
                     sender_verified_count+=1
                 for content_kind,body in decode_text(parsed):
-                    raw_craigslist_urls+=len(CL_URL.findall(body))
-                    for raw_url in CL_URL.findall(body):
+                    urls=CL_URL.findall(body)
+                    raw_craigslist_urls+=len(urls)
+                    for raw_url in urls:
                         try:
                             parsed_url=urlparse(html.unescape(raw_url))
                             path=parsed_url.path.lower()
-                            if re.search(r'/[0-9]{8,}\\.html
+                            if path.endswith(".html") and re.search("[0-9]{8,}",path):
+                                shape_count["listing_id_html"]+=1
+                            elif ".html" in path:
+                                shape_count["html_links_other"]+=1
+                            else:
+                                shape_count["non_listing"]+=1
+                            if "/cto/" in path:shape_count["owner_category"]+=1
+                            if "/ctd/" in path:shape_count["dealer_category"]+=1
+                        except ValueError:pass
                     if content_kind=="text/html":
                         html_email_count+=1
                         p=Links()
