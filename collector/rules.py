@@ -68,17 +68,43 @@ def classify(item):
     return x
 
 def assess_comparables(item, comps):
-    """Conservative manual comparable-sales feature, not an automated appraisal.
-    Only same normalized model family and known comparable SOLD prices.
+    """Manual verified sales only, comparable by generation, body and year window.
+
+    Never infer value for a project from 'driver' sales. This reference is
+    informational, not an independent appraisal.
     """
-    text=str(item.get("title","")).lower()
-    model=next((m for m in ("993","964","930","911") if re.search(r"\b"+m+r"\b",text)),None)
-    known=[int(c["sold_price"]) for c in comps if c.get("model")==model and c.get("sold_price") and
-           c.get("verified_sold") is True and c.get("condition")=="driver"]
-    if model is None or len(known)<3:
-        return {"status":"insufficient_data","comps":len(known),"median_sold_price":None,"discount_pct":None}
-    market=median(known)
+    text=str(item.get("title") or "").lower()
+    year=item.get("year")
+    try: year=int(year)
+    except (ValueError,TypeError): year=None
+    def family(y):
+        if y is None:return None
+        if y<=1973:return "early911"
+        if y<=1989:return "gbody"
+        if y<=1994:return "964"
+        return "993"
+    body=next((v for v in ("targa","cabriolet","coupe") if v in text),None)
+    condition_text=(text+" "+str(item.get("description") or "")).lower()
+    is_project=bool(PROJECT.search(condition_text))
+    if year is None or body is None or is_project:
+        return {"status":"insufficient_vehicle_match","comps":0,"median_sold_price":None,"discount_pct":None}
+    available=[]
+    for c in comps:
+        if c.get("verified_sold") is not True or c.get("condition")!="driver" or c.get("body")!=body:continue
+        try:
+            cy=int(c.get("year"))
+            sold=int(c.get("sold_price"))
+        except (ValueError,TypeError):continue
+        if sold<=0 or abs(year-cy)>3 or family(cy)!=family(year):continue
+        if not c.get("source_url"):continue
+        available.append(sold)
+    if len(available)<3:
+        return {"status":"insufficient_data","comps":len(available),"median_sold_price":None,"discount_pct":None}
+    market=median(available)
     price=item.get("price")
-    if price is None:return {"status":"price_unknown","comps":len(known),"median_sold_price":market,"discount_pct":None}
-    discount=round((1-int(price)/market)*100,1) if market else None
-    return {"status":"rough_reference_only","comps":len(known),"median_sold_price":market,"discount_pct":discount}
+    if price is None:
+        return {"status":"price_unknown","comps":len(available),"median_sold_price":market,"discount_pct":None}
+    try:price=int(price)
+    except (TypeError,ValueError):price=None
+    return {"status":"rough_reference_only","comps":len(available),
+            "median_sold_price":market,"discount_pct":round((1-price/market)*100,1) if price else None}
