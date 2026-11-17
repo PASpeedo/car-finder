@@ -59,7 +59,7 @@ loadCraigslist();
 
 
 function urlKey(u){
- try{const x=new URL(u);return x.hostname.toLowerCase()+x.pathname.replace(/\\/$/,'')}catch{return String(u||'')}
+ try{const x=new URL(u);return x.hostname.toLowerCase()+x.pathname.replace(/[/]$/,'')}catch{return String(u||'')}
 }
 function reviewMatch(x){return reviewedCars.find(r=>urlKey(r.url)===urlKey(x.url))}
 function reviewList(heading,items){
@@ -95,7 +95,7 @@ $('reviewed-list').addEventListener('click',e=>{
  }
  if(b.dataset.reviewedImport){
    const x=reviewedCars.find(r=>r.id===b.dataset.reviewedImport);if(!x)return;
-   insert({url:x.url,title:x.title,year:x.year,price:x.price,location:x.location,seller_type:'unknown',description:[x.priority_reason,...(x.risk_notes||[]),x.valuation_note].join('\\n')});
+   insert({url:x.url,title:x.title,year:x.year,price:x.price,location:x.location,seller_type:'unknown',description:[x.priority_reason,...(x.risk_notes||[]),x.valuation_note].join(' · ')});
    store();b.textContent='Added / updated ✓';
  }
 });
