@@ -61,19 +61,17 @@ def chat_for(token):
     return None
 
 def qualifies(x):
-    if x.get("status")!="review" or x.get("seller_type")=="dealer":return False
+    """Exceptional alert policy: no automatic ungrounded valuation."""
+    if x.get("status")!="review" or x.get("seller_type")!="owner_category":return False
     title=str(x.get("title") or "")
     if not P911.search(title) or RISK.search(title):return False
-    year=x.get("year")
-    if year is not None:
-        try:
-            if not 1965<=int(year)<=1997:return False
-        except (ValueError,TypeError):return False
-    price=x.get("price")
-    if price is not None:
-        try:return 0<int(price)<=20000
-        except (ValueError,TypeError):return False
-    # If price missing from email, only motivated-seller titles trigger alerts.
+    try:
+        year=int(x.get("year"))
+        price=int(x.get("price"))
+    except (TypeError,ValueError):return False
+    if not 1965<=year<=1997 or not 0<price<=20000:return False
+    # No market-data confidence yet; use stringent evidence of urgency only.
+    # Project cars allowed, but never claim they are good deals from the email.
     return bool(URGENT.search(title))
 
 def main():
@@ -99,7 +97,7 @@ def main():
     for x in pending[:4]:
         price="$"+format(int(x["price"]),",") if x.get("price") is not None else "Not shown in email"
         message="\n".join([
-            "🔎 Porsche 911 candidate — NOT a verified deal",
+            "🏁 Motivated-seller 911 candidate — NOT an appraised deal",
             str(x.get("title","Porsche"))[:150],
             "Asking: "+price,
             "Seller and condition: unverified",
