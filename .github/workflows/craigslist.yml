@@ -1,4 +1,5 @@
 name: Craigslist deal intake
+# Free email alerts, careful triage, and iPhone health monitoring.
 on:
   workflow_dispatch:
   push:
