@@ -1,5 +1,5 @@
 {
-  "last_checked_utc": "2026-11-17T05:29:03.139412+00:00",
+  "last_checked_utc": "2026-11-17T05:30:52.268028+00:00",
   "records": 0,
   "emails_scanned": 13,
   "candidate_links_extracted": 0,
@@ -7,6 +7,13 @@
   "html_anchor_links": 218,
   "html_parts_seen": 13,
   "verified_sender_messages": 13,
+  "url_shape_counts": {
+    "listing_id_html": 0,
+    "html_links_other": 0,
+    "owner_category": 0,
+    "dealer_category": 0,
+    "non_listing": 442
+  },
   "review_candidates": 0,
   "source": "Craigslist saved-search email"
 }
