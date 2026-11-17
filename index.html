@@ -48,7 +48,7 @@ async function refreshCollectorHealth(){
    let x=await r.json();
    if(!x.last_checked_utc){node.textContent='Collector has not finished its first documented Gmail check yet.';return}
    let age=(Date.now()-new Date(x.last_checked_utc).getTime())/60000;
-   node.textContent=(age>90?'⚠️ Last successful check is over 90 minutes old.':'✓ Collector recently checked Gmail.')+' Last checked: '+new Date(x.last_checked_utc).toLocaleString()+' · '+Number(x.records||0)+' saved candidates.';
+   node.textContent=(age>90?'⚠️ Last successful check is over 90 minutes old.':'✓ Collector recently checked Gmail.')+' Last checked: '+new Date(x.last_checked_utc).toLocaleString()+' · '+Number(x.records||0)+' saved candidates · '+Number(x.emails_scanned||0)+' emails examined · '+Number(x.candidate_links_extracted||0)+' listing links found.';
  }catch(e){node.textContent='Collector status unavailable; check GitHub Actions.'}
 }
 $('refresh-craigslist').onclick=loadCraigslist;
