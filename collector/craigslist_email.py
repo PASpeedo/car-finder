@@ -89,6 +89,10 @@ def main():
     items={x["url"]:x for x in load() if isinstance(x,dict) and x.get("url")}
     scanned_emails=0
     extracted_links=0
+    raw_craigslist_urls=0
+    html_anchor_count=0
+    html_email_count=0
+    sender_verified_count=0
     with imaplib.IMAP4_SSL(host,993,timeout=30) as imap:
         imap.login(user,pwd)
         status,_=imap.select("INBOX",readonly=True)
@@ -102,6 +106,17 @@ def main():
             for blob in msgs or []:
                 if not isinstance(blob,tuple) or not isinstance(blob[1],bytes):continue
                 scanned_emails+=1
+                parsed=email.message_from_bytes(blob[1])
+                if re.search(r'@(?:[a-z0-9-]+\\.)?craigslist\\.org\\b',parsed.get("From","").lower()):
+                    sender_verified_count+=1
+                for content_kind,body in decode_text(parsed):
+                    raw_craigslist_urls+=len(CL_URL.findall(body))
+                    if content_kind=="text/html":
+                        html_email_count+=1
+                        p=Links()
+                        try:p.feed(body)
+                        except Exception:pass
+                        html_anchor_count+=len(p.links)
                 candidates=parse_email(blob[1])
                 extracted_links+=len(candidates)
                 for candidate in candidates:
@@ -144,6 +159,10 @@ def main():
         "records":len(data),
         "emails_scanned":scanned_emails,
         "candidate_links_extracted":extracted_links,
+        "craigslist_urls_in_email_bodies":raw_craigslist_urls,
+        "html_anchor_links":html_anchor_count,
+        "html_parts_seen":html_email_count,
+        "verified_sender_messages":sender_verified_count,
         "review_candidates":sum(x.get("status")=="review" for x in data),
         "source":"Craigslist saved-search email"
     },indent=2)+"\n")
