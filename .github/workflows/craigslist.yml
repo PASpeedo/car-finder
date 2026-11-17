@@ -1,5 +1,5 @@
 name: Craigslist deal intake
-# Free email alerts, conservative Porsche triage, photo extraction and safe URL diagnostics.
+# Free email alerts, conservative Porsche triage, reviewed listings, and tested mobile code.
 on:
   workflow_dispatch:
   push:
