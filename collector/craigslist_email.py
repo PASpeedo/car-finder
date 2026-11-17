@@ -67,7 +67,7 @@ def parse_email(raw):
             if key not in results or len(title)>len(results[key]["title"]):
                 results[key]={"url":key,"title":title,"source":"craigslist-email","first_seen":datetime.now(timezone.utc).isoformat()}
     return list(results.values())
-from rules import classify as classify_rule
+from rules import classify as classify_rule, assess_comparables
 
 def classify(row):
     return classify_rule(row)
@@ -127,6 +127,12 @@ def main():
                     items[candidate["url"]]=fresh
         imap.logout()
     data=list(items.values())[-LIMIT:]
+    try:
+        comps=json.loads(Path("comparables.json").read_text())
+        if not isinstance(comps,list):comps=[]
+    except (FileNotFoundError,ValueError):comps=[]
+    for row in data:
+        row["market_assessment"]=assess_comparables(row,comps)
     save(data)
     Path("collector_status.json").write_text(json.dumps({
         "last_checked_utc":datetime.now(timezone.utc).isoformat(),
