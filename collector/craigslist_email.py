@@ -101,8 +101,30 @@ def main():
                 if not isinstance(blob,tuple) or not isinstance(blob[1],bytes):continue
                 for candidate in parse_email(blob[1]):
                     old=items.get(candidate["url"])
-                    if old:continue
-                    items[candidate["url"]]=classify(candidate)
+                    fresh=classify(candidate)
+                    if old:
+                        # New Craigslist email may change price or reveal better title.
+                        if len(candidate.get("title","")) > len(old.get("title","")):
+                            old["title"]=candidate["title"]
+                        new_price=fresh.get("price")
+                        previous=old.get("price")
+                        if new_price is not None and new_price!=previous:
+                            history=old.setdefault("price_history",[])
+                            if previous is not None and not history:
+                                history.append({"price":previous,"seen":old.get("first_seen")})
+                            history.append({"price":new_price,"seen":datetime.now(timezone.utc).isoformat()})
+                            old["price"]=new_price
+                            old["price_dropped"]=previous is not None and new_price<previous
+                        original_seen=old.get("first_seen")
+                        saved_history=old.get("price_history",[])
+                        was_drop=old.get("price_dropped",False)
+                        revised=classify(old)
+                        revised["first_seen"]=original_seen
+                        revised["price_history"]=saved_history
+                        revised["price_dropped"]=was_drop
+                        items[candidate["url"]]=revised
+                        continue
+                    items[candidate["url"]]=fresh
         imap.logout()
     data=list(items.values())[-LIMIT:]
     save(data)
