@@ -107,7 +107,7 @@ def main():
                 if not isinstance(blob,tuple) or not isinstance(blob[1],bytes):continue
                 scanned_emails+=1
                 parsed=email.message_from_bytes(blob[1])
-                if re.search(r'@(?:[a-z0-9-]+\\.)?craigslist\\.org\\b',parsed.get("From","").lower()):
+                if re.search(r'@(?:[a-z0-9-]+\.)?craigslist\.org\b',parsed.get("From","").lower()):
                     sender_verified_count+=1
                 for content_kind,body in decode_text(parsed):
                     raw_craigslist_urls+=len(CL_URL.findall(body))
