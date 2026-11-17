@@ -20,6 +20,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Run parser and scoring tests
+        run: python -m unittest -v test_rules
       - name: Import official Craigslist saved-search emails
         env:
           CL_IMAP_USER: ${{ secrets.CL_IMAP_USER }}
@@ -36,8 +38,15 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add deals.json telegram_state.json
+          git add deals.json telegram_state.json collector_status.json
           if ! git diff --cached --quiet; then
             git commit -m "Update Craigslist candidate feed"
             git push
           fi
+
+      - name: Warn via Telegram on ingestion or notification failures
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python collector/health_alert.py
