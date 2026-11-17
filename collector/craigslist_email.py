@@ -20,14 +20,28 @@ PROJECT=re.compile(r'\b(?:project|roller|non.running|does(?:n.t| not)\s+run|not\
 RISK=re.compile(r'\b(?:no\s+title|lost\s+title|salvage|flood(?:ed)?|wire\s+transfer|deposit\s+to\s+hold)\b',re.I)
 DRIVER=re.compile(r'\b(?:runs?\s+and\s+drives?|running\s+and\s+driving|daily\s+driver|starts?\s+and\s+drives?)\b',re.I)
 class Links(HTMLParser):
-    def __init__(self): super().__init__();self.links=[];self.current=None
+    def __init__(self):
+        super().__init__();self.links=[];self.current=None
     def handle_starttag(self,tag,attrs):
+        d=dict(attrs)
         if tag=="a":
-            d=dict(attrs);self.current=[d.get("href",""),""]
+            self.current=[d.get("href",""),"",None]
+        elif tag=="img" and self.current and not self.current[2]:
+            self.current[2]=d.get("src") or d.get("data-src")
     def handle_data(self,data):
         if self.current:self.current[1]+=data
     def handle_endtag(self,tag):
-        if tag=="a" and self.current:self.links.append(tuple(self.current));self.current=None
+        if tag=="a" and self.current:
+            self.links.append(tuple(self.current))
+            self.current=None
+def clean_photo(raw):
+    if not raw:return None
+    try:
+        p=urlparse(html.unescape(raw))
+        if p.scheme=="https" and p.hostname=="images.craigslist.org":
+            return urlunparse(("https",p.netloc,p.path,"","",""))
+    except (ValueError,TypeError):pass
+    return None
 def clean_url(raw):
     raw=html.unescape(raw).rstrip(".,;!'\"")
     try:
@@ -57,15 +71,20 @@ def parse_email(raw):
             except Exception:pass
             pairs=parser.links
         else:pairs=[]
-        pairs += [(u,"") for u in CL_URL.findall(body)]
-        for url,title in pairs:
+        pairs += [(u,"",None) for u in CL_URL.findall(body)]
+        for url,title,photo in pairs:
             key=clean_url(url)
             if not key:continue
             # Email anchor text often contains listing title; subject is search name.
             title=html.unescape(re.sub(r'\s+',' ',re.sub(r'<[^>]*>',' ',title))).strip()[:200]
             if not title:title=subject[:160]
-            if key not in results or len(title)>len(results[key]["title"]):
+            valid_photo=clean_photo(photo)
+            if key not in results:
                 results[key]={"url":key,"title":title,"source":"craigslist-email","first_seen":datetime.now(timezone.utc).isoformat()}
+            elif len(title)>len(results[key]["title"]):
+                results[key]["title"]=title
+            if valid_photo and not results[key].get("image_url"):
+                results[key]["image_url"]=valid_photo
     return list(results.values())
 from rules import classify as classify_rule, assess_comparables
 
