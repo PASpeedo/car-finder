@@ -1,5 +1,5 @@
 name: Craigslist deal intake
-# Free email alerts; 10-minute off-peak best-effort schedule and recovery warnings.
+# Free email alerts; 10-minute staggered schedule, persistent Telegram destination and recovery warnings.
 on:
   workflow_dispatch:
   push:
