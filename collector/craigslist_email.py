@@ -190,8 +190,19 @@ def main():
     for row in data:
         row["market_assessment"]=assess_comparables(row,comps)
     save(data)
+    now_utc=datetime.now(timezone.utc)
+    try:
+        old_status=json.loads(Path("collector_status.json").read_text())
+        prior_str=old_status.get("last_checked_utc")
+        prior=datetime.fromisoformat(prior_str.replace("Z","+00:00")) if isinstance(prior_str,str) else None
+        gap_minutes=round(max(0,(now_utc-prior).total_seconds()/60),1) if prior and prior.tzinfo else None
+    except (FileNotFoundError,ValueError,TypeError,AttributeError):
+        prior_str=None
+        gap_minutes=None
     Path("collector_status.json").write_text(json.dumps({
-        "last_checked_utc":datetime.now(timezone.utc).isoformat(),
+        "last_checked_utc":now_utc.isoformat(),
+        "previous_checked_utc":prior_str,
+        "gap_minutes_since_previous":gap_minutes,
         "records":len(data),
         "emails_scanned":scanned_emails,
         "candidate_links_extracted":extracted_links,
