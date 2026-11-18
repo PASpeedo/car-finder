@@ -4,6 +4,7 @@
 Does not log bot tokens, email contents, or chat IDs.
 """
 import os, json, sys
+from telegram_notify import read, STATE, recover_chat
 from pathlib import Path
 from urllib import request, parse, error
 
@@ -22,6 +23,8 @@ def main():
     if not token:
         print("Health warning unavailable: Telegram not configured")
         return
+    if not chat:
+        chat=recover_chat(token,read(STATE,{}))
     if not chat:
         updates=api(token,"getUpdates",{"timeout":"0","limit":"100"})
         ids={str(m["chat"]["id"]) for x in (updates or []) for m in [x.get("message",{})]
