@@ -91,6 +91,20 @@ def main():
         state["welcome"]=True
         save(STATE,state)
         print("Telegram connection confirmed.")
+    # GitHub's scheduler can skip triggers without firing any failure step.
+    # On the NEXT successful run, report long intervals since the prior scan.
+    scan_status=read(Path("collector_status.json"),{})
+    gap=scan_status.get("gap_minutes_since_previous")
+    current_scan=scan_status.get("last_checked_utc")
+    if isinstance(gap,(int,float)) and gap>=60 and current_scan and state.get("last_gap_warned_scan")!=current_scan:
+        telegram(token,"sendMessage",{
+            "chat_id":chat,
+            "text":"⚠️ Speedy missed scheduled checks for about "+str(round(gap))+
+                   " minutes. Gmail scanning has now resumed. GitHub's free scheduler can delay or skip runs."
+        })
+        state["last_gap_warned_scan"]=current_scan
+        save(STATE,state)
+        print("Telegram: reported delayed schedule (gap minutes)",round(gap))
     sent=set(state.get("notified",[]))
     pending=[x for x in read(FEED,[]) if isinstance(x,dict) and x.get("url") and x["url"] not in sent and qualifies(x)]
     pending.sort(key=lambda x:x.get("first_seen",""))
