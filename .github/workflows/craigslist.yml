@@ -1,5 +1,5 @@
 name: Craigslist deal intake
-# Free email alerts, researched seller-message templates, and tested mobile code.
+# Free email alerts; 10-minute off-peak best-effort schedule and recovery warnings.
 on:
   workflow_dispatch:
   push:
