@@ -22,7 +22,7 @@
 - Known dealers, title-risk wording and out-of-range years are screened out when those details appear in the email.
 - The email is often incomplete, so these messages are **unverified candidates, not independently appraised deals**.
 - Deduplication prevents repeat alerts, and batches are capped at 4 per scheduled run.
-- GitHub Action checks are scheduled about every 15 minutes. Craigslist may send its emails much later; immediate coverage is **not** guaranteed.
+- GitHub Action checks are scheduled about every 10 minutes at offset times. Craigslist may send its emails much later; immediate coverage is **not** guaranteed.
 
 ## Privacy / security
 
