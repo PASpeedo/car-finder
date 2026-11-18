@@ -35,8 +35,44 @@ def telegram(token,method,data):
     if not ans.get("ok"):raise RuntimeError("Telegram rejected request")
     return ans["result"]
 
-def chat_for(token):
+def chat_fingerprint(token,chat):
+    return hmac.new(token.encode(),chat.encode(),hashlib.sha256).hexdigest()
+
+def protect_chat(token,chat):
+    """Encrypt the private Telegram chat ID before writing public GitHub state.
+
+    Uses a fresh random nonce and a token-keyed HMAC stream (chat ID < 32 bytes).
+    The separately stored keyed fingerprint authenticates decrypted values.
+    """
+    nonce=os.urandom(16)
+    raw=chat.encode()
+    if len(raw)>32:raise RuntimeError("Unexpected Telegram chat ID length")
+    pad=hmac.new(token.encode(),b"speedy-chat-v1:"+nonce,hashlib.sha256).digest()
+    return (nonce+bytes(a^b for a,b in zip(raw,pad))).hex()
+
+def recover_chat(token,state):
+    cipher=state.get("chat_cipher_hex")
+    fingerprint=state.get("chat_fingerprint")
+    if not cipher or not fingerprint:return None
+    try:
+        blob=bytes.fromhex(cipher)
+        if not 17<=len(blob)<=48:return None
+        nonce,encoded=blob[:16],blob[16:]
+        pad=hmac.new(token.encode(),b"speedy-chat-v1:"+nonce,hashlib.sha256).digest()
+        chat=bytes(a^b for a,b in zip(encoded,pad)).decode("ascii")
+        if not re.fullmatch(r"-?\d+",chat):return None
+        if not hmac.compare_digest(chat_fingerprint(token,chat),fingerprint):return None
+        return chat
+    except (ValueError,UnicodeDecodeError,TypeError):
+        return None
+
+def chat_for(token,state):
     override=os.getenv("TELEGRAM_CHAT_ID","").strip()
+    if not override:
+        remembered=recover_chat(token,state)
+        if remembered:
+            print("Telegram: securely restored saved private destination.")
+            return remembered
     if override:
         if not re.fullmatch(r"-?\d+",override):raise RuntimeError("Chat ID must be numeric")
         return override
@@ -79,13 +115,18 @@ def main():
     if not token:
         print("Telegram not connected yet; notifications skipped.")
         return 0
-    chat=chat_for(token)
-    if not chat:return 0
     state=read(STATE,{"chat_fingerprint":"","welcome":False,"notified":[]})
-    fingerprint=hmac.new(token.encode(),chat.encode(),hashlib.sha256).hexdigest()
+    chat=chat_for(token,state)
+    if not chat:return 0
+    fingerprint=chat_fingerprint(token,chat)
     if state.get("chat_fingerprint") and state["chat_fingerprint"]!=fingerprint:
         raise RuntimeError("Telegram destination changed; review telegram_state.json.")
-    if not state.get("chat_fingerprint"):state={"chat_fingerprint":fingerprint,"welcome":False,"notified":[]}
+    if not state.get("chat_fingerprint"):
+        state={"chat_fingerprint":fingerprint,"welcome":False,"notified":[]}
+    if not recover_chat(token,state):
+        state["chat_cipher_hex"]=protect_chat(token,chat)
+        save(STATE,state)
+        print("Telegram: securely saved private chat destination for future scheduled runs.")
     if not state.get("welcome"):
         telegram(token,"sendMessage",{"chat_id":chat,"text":"🏁 Speedy connected! Craigslist candidate notifications are active. Listings are not independently verified."})
         state["welcome"]=True
