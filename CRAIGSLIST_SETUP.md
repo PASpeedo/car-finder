@@ -10,7 +10,7 @@ The app now has a **Craigslist intake** section. It shows results imported from 
    - `CL_IMAP_USER` = the dedicated Gmail address
    - `CL_IMAP_APP_PASSWORD` = that inbox's Gmail App Password (not regular password)
 4. Under **Settings → Actions → General**, allow workflows and give the repository workflow **Read and write permissions** (needed to update `deals.json`).
-5. Under **Actions → Craigslist deal intake**, choose **Run workflow** for your first import. Afterwards GitHub schedules a check around every 15 minutes, but scheduled runs may be delayed.
+5. Under **Actions → Craigslist deal intake**, choose **Run workflow** for your first import. Afterwards GitHub schedules a check approximately every 10 minutes at offset times, but GitHub scheduled runs may be delayed or skipped.
 6. Visit your Home Screen app and press **Refresh** in its Craigslist section.
 
 ## Limitations
