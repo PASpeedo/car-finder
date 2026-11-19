@@ -1,5 +1,5 @@
 name: Craigslist deal intake
-# Free email alerts; 10-minute best-effort schedule, with rate-limited outage notices.
+# Free email alerts; every actual workflow failure triggers immediate Telegram error notice.
 on:
   workflow_dispatch:
   push:
@@ -52,7 +52,7 @@ jobs:
             git push
           fi
 
-      - name: Warn via Telegram on ingestion or notification failures
+      - name: Warn via Telegram immediately on ANY workflow step failure
         if: failure()
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
