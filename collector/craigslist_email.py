@@ -103,8 +103,8 @@ def main():
     pwd=os.getenv("CL_IMAP_APP_PASSWORD","").strip()
     host=os.getenv("CL_IMAP_HOST","imap.gmail.com").strip()
     if not user or not pwd:
-        print("Not configured: add CL_IMAP_USER and CL_IMAP_APP_PASSWORD repository secrets.")
-        return 0
+        print("ERROR: Craigslist Gmail secrets are missing; scanning cannot run.")
+        return 2
     items={x["url"]:x for x in load() if isinstance(x,dict) and x.get("url")}
     scanned_emails=0
     extracted_links=0
