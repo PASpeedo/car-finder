@@ -114,11 +114,10 @@ def qualifies(x):
 def main():
     token=os.getenv("TELEGRAM_BOT_TOKEN","").strip()
     if not token:
-        print("Telegram not connected yet; notifications skipped.")
-        return 0
+        raise RuntimeError("Telegram bot token is missing; notifications cannot run")
     state=read(STATE,{"chat_fingerprint":"","welcome":False,"notified":[]})
     chat=chat_for(token,state)
-    if not chat:return 0
+    if not chat:raise RuntimeError("Telegram destination unavailable; notifications cannot run")
     fingerprint=chat_fingerprint(token,chat)
     if state.get("chat_fingerprint") and state["chat_fingerprint"]!=fingerprint:
         raise RuntimeError("Telegram destination changed; review telegram_state.json.")
