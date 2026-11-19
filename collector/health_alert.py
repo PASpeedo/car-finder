@@ -34,7 +34,10 @@ def main():
             return
         chat=next(iter(ids))
     url=os.environ.get("GITHUB_SERVER_URL","https://github.com")+"/"+os.environ.get("GITHUB_REPOSITORY","PASpeedo/car-finder")+"/actions/runs/"+os.environ.get("GITHUB_RUN_ID","")
-    api(token,"sendMessage",{"chat_id":chat,"text":"⚠️ Speedy needs attention: Craigslist email intake or notifications failed. Check GitHub Actions:\n"+url})
-    print("Health warning request finished")
+    result=api(token,"sendMessage",{"chat_id":chat,"text":"🚨 Speedy ERROR: A Craigslist scan, test, publish, or Telegram notification step failed. Check the failed GitHub Actions run:\n"+url})
+    if result is None:
+        print("ERROR: Could not deliver Telegram failure alert",file=sys.stderr)
+        sys.exit(1)
+    print("Telegram failure alert delivered")
 
 if __name__=="__main__":main()
