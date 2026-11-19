@@ -5,6 +5,7 @@ Set TELEGRAM_BOT_TOKEN in GitHub Actions secrets. Send /start to the bot;
 a unique private conversation is detected automatically.
 """
 import hashlib, hmac, json, os, re, sys
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib import request, parse, error
 
@@ -132,20 +133,28 @@ def main():
         state["welcome"]=True
         save(STATE,state)
         print("Telegram connection confirmed.")
-    # GitHub's scheduler can skip triggers without firing any failure step.
-    # On the NEXT successful run, report long intervals since the prior scan.
+    # GitHub's free scheduler occasionally skips runs. Avoid alarming the owner
+    # about routine delays: alert only after 6+ hours, at most once per 24h.
     scan_status=read(Path("collector_status.json"),{})
     gap=scan_status.get("gap_minutes_since_previous")
     current_scan=scan_status.get("last_checked_utc")
-    if isinstance(gap,(int,float)) and gap>=60 and current_scan and state.get("last_gap_warned_scan")!=current_scan:
+    previous_warning=state.get("last_gap_warning_utc")
+    try:
+        warned_at=datetime.fromisoformat(previous_warning.replace("Z","+00:00")) if previous_warning else None
+    except (ValueError,TypeError,AttributeError):
+        warned_at=None
+    now=datetime.now(timezone.utc)
+    cooldown_ok=not warned_at or (now-warned_at).total_seconds()>=86400
+    if isinstance(gap,(int,float)) and gap>=360 and current_scan and cooldown_ok:
         telegram(token,"sendMessage",{
             "chat_id":chat,
-            "text":"⚠️ Speedy missed scheduled checks for about "+str(round(gap))+
-                   " minutes. Gmail scanning has now resumed. GitHub's free scheduler can delay or skip runs."
+            "text":"ℹ️ Speedy update: GitHub delayed a scheduled scan by about "+str(round(gap/60,1))+
+                   " hours. Scanning has resumed. I'll send at most one scheduling notice per day. Deal alerts are unaffected by this notice."
         })
+        state["last_gap_warning_utc"]=now.isoformat()
         state["last_gap_warned_scan"]=current_scan
         save(STATE,state)
-        print("Telegram: reported delayed schedule (gap minutes)",round(gap))
+        print("Telegram: reported substantial scheduler interruption (hours)",round(gap/60,1))
     sent=set(state.get("notified",[]))
     pending=[x for x in read(FEED,[]) if isinstance(x,dict) and x.get("url") and x["url"] not in sent and qualifies(x)]
     pending.sort(key=lambda x:x.get("first_seen",""))
