@@ -1,20 +1,20 @@
 {
-  "last_checked_utc": "2026-11-23T02:37:37.151021+00:00",
-  "previous_checked_utc": "2026-11-22T22:02:07.886248+00:00",
-  "gap_minutes_since_previous": 275.5,
+  "last_checked_utc": "2026-11-23T11:19:58.238719+00:00",
+  "previous_checked_utc": "2026-11-23T02:37:37.151021+00:00",
+  "gap_minutes_since_previous": 522.4,
   "records": 0,
-  "emails_scanned": 17,
+  "emails_scanned": 21,
   "candidate_links_extracted": 0,
-  "craigslist_urls_in_email_bodies": 490,
-  "html_anchor_links": 250,
-  "html_parts_seen": 17,
-  "verified_sender_messages": 17,
+  "craigslist_urls_in_email_bodies": 558,
+  "html_anchor_links": 290,
+  "html_parts_seen": 21,
+  "verified_sender_messages": 21,
   "url_shape_counts": {
     "listing_id_html": 0,
     "html_links_other": 0,
     "owner_category": 0,
     "dealer_category": 0,
-    "non_listing": 490
+    "non_listing": 558
   },
   "review_candidates": 0,
   "source": "Craigslist saved-search email"
